@@ -11,7 +11,7 @@ export function DashboardReportsPage() {
 
   return (
     <>
-      <PageHeader title="Dashboard & Reports" />
+      <PageHeader title="Painel" />
       <p>Backend: {ping.isPending ? 'a verificar…' : ping.isError ? 'indisponível' : ping.data.status}</p>
     </>
   )
