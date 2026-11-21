@@ -3,7 +3,7 @@ import { History } from 'lucide-react'
 import type { AuditEventDto, AuditEventPageDto } from '@alinha/api-client'
 import { formatDateTime, useApiQuery, useHost } from '@alinha/plugin-sdk'
 import { Button, DataTable, EmptyState, ErrorState, Field, PageHeader, Select, SkeletonRows, TextInput, type ColumnDef } from '@alinha/ui'
-import { historyQuery, invalidRange, NO_FILTERS, PAGE_SIZE, type HistoryFilters } from '../history/filters'
+import { historyQuery, invalidRange, isFiltered, NO_FILTERS, type HistoryFilters } from '../history/filters'
 import { actionLabel, actorLabel, detailsText, ENTITY_TYPES, entityLabel } from '../history/labels'
 
 const ENTITY_OPTIONS = [
@@ -41,7 +41,7 @@ export function HistoryPage() {
     setFilters((f) => ({ ...f, ...patch }))
     setPage(0)
   }
-  const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS)
+  const filtered = isFiltered(filters)
 
   const columns: ColumnDef<AuditEventDto>[] = [
     {
@@ -126,7 +126,7 @@ export function HistoryPage() {
             </EmptyState>
           }
           footer={
-            data && data.total > PAGE_SIZE ? (
+            data && data.total > data.pageSize ? (
               <nav aria-label="Páginas do histórico" className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                 <span className="text-[0.875rem] text-ink-soft" aria-live="polite">
                   Página {page + 1} de {pages} · {data.total} alterações
