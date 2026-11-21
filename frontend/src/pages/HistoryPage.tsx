@@ -62,11 +62,13 @@ export function HistoryPage() {
 
   const data = history.data
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
-  // When the history gets shorter while a later page is open, go to the last page that still exists.
+  // When the history gets shorter while a later page is open, go to the last page that still exists. Only on a real
+  // answer: placeholder data is the previous query's, and its total says nothing about the page being loaded.
   const lastPage = pages - 1
+  const settled = !!data && !history.isPlaceholderData
   useEffect(() => {
-    if (data && page > lastPage) setPage(lastPage)
-  }, [data, page, lastPage])
+    if (settled && page > lastPage) setPage(lastPage)
+  }, [settled, page, lastPage])
 
   return (
     <>
