@@ -1,18 +1,45 @@
-import { useQuery } from '@tanstack/react-query'
-import { useHost } from '@alinha/plugin-sdk'
-import { PageHeader } from '@alinha/ui'
+import type { ReactNode } from 'react'
+import { Home, LayoutDashboard } from 'lucide-react'
+import { EmptyState, PageHeader } from '@alinha/ui'
 
-export function DashboardReportsPage() {
-  const { api } = useHost()
-  const ping = useQuery({
-    queryKey: ['dashboard-reports', 'ping'],
-    queryFn: () => api<{ plugin: string; status: string }>('/dashboard-reports/ping'),
-  })
+interface DashboardViewProps {
+  title: string
+  subtitle: string
+  icon: ReactNode
+  description: string
+}
 
+function DashboardView({ title, subtitle, icon, description }: DashboardViewProps) {
   return (
     <>
-      <PageHeader title="Painel" />
-      <p>Backend: {ping.isPending ? 'a verificar…' : ping.isError ? 'indisponível' : ping.data.status}</p>
+      <PageHeader title={title} subtitle={subtitle} />
+      <EmptyState icon={icon} title="Em construção">
+        {description}
+      </EmptyState>
     </>
+  )
+}
+
+/** Client area home page (`/org/:org/dashboard`). */
+export function ClientHomePage() {
+  return (
+    <DashboardView
+      title="Início"
+      subtitle="Resumo do estado de cibersegurança da sua organização."
+      icon={<Home className="size-5" aria-hidden />}
+      description="Aqui vai ver, num só sítio, o nível de preparação da sua organização, os próximos passos recomendados e os relatórios para partilhar."
+    />
+  )
+}
+
+/** Consultant overview of one client (`/portfolio/:org/dashboard`). */
+export function ConsultantOverviewPage() {
+  return (
+    <DashboardView
+      title="Visão geral"
+      subtitle="Resumo do estado de cibersegurança desta organização."
+      icon={<LayoutDashboard className="size-5" aria-hidden />}
+      description="Aqui vai ver o ponto de situação desta organização cliente: avaliação, riscos principais, plano de ação e relatórios."
+    />
   )
 }

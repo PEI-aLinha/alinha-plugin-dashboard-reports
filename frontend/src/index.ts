@@ -1,5 +1,6 @@
 import { definePlugin } from '@alinha/plugin-sdk'
-import { DashboardReportsPage } from './pages/DashboardReportsPage'
+import { Home, LayoutDashboard } from 'lucide-react'
+import { ClientHomePage, ConsultantOverviewPage } from './pages/DashboardReportsPage'
 
 /**
  * The plugin's frontend entry point. The shell reads this object and mounts
@@ -14,14 +15,14 @@ export default definePlugin({
   name: 'Dashboard & Reports',
   routes: {
     client: [
-      { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      { path: 'dashboard', handle: { title: 'Início' }, Component: ClientHomePage },
     ],
     consultant: [
-      { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      { path: 'dashboard', handle: { title: 'Visão geral' }, Component: ConsultantOverviewPage },
     ],
   },
   nav: [
-    { label: 'Painel', path: 'dashboard', area: 'client' },
-    { label: 'Painel', path: 'dashboard', area: 'consultant' },
+    { label: 'Início', path: 'dashboard', area: 'client', icon: Home, order: 10 },
+    { label: 'Visão geral', path: 'dashboard', area: 'consultant', icon: LayoutDashboard, order: 10 },
   ],
 })
