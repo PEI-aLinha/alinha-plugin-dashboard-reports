@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AuditEventDto, AuditEventPageDto } from '@alinha/api-client'
 import { ApiError, PluginHostContext, type PluginHost } from '@alinha/plugin-sdk'
 import { HistoryPage } from './HistoryPage'
@@ -27,12 +27,12 @@ function pageOf(items: AuditEventDto[], total = items.length, page = 0): AuditEv
   return { items, page, pageSize: 20, total }
 }
 
-function renderPage(api: (path: string) => Promise<unknown>) {
+function renderPage(api: (path: string) => Promise<unknown>, user: PluginHost['user'] = ME) {
   const spy = vi.fn(api)
   const host: PluginHost = {
     tenantId: 't1',
     organization: { id: 't1', slug: 'acme', name: 'Componentes Águeda, Lda.' },
-    user: ME,
+    user,
     can: () => true,
     api: spy as PluginHost['api'],
   }
@@ -45,6 +45,15 @@ function renderPage(api: (path: string) => Promise<unknown>) {
     </QueryClientProvider>,
   )
   return spy
+}
+
+/**
+ * Radix Select keeps a hidden native <select> in sync inside a form; changing it is how a test picks an option
+ * without the pointer events jsdom does not have. 0 is "Sobre", 1 is "Quem".
+ */
+function nativeSelect(index: number): HTMLSelectElement {
+  const selects = document.querySelectorAll('form[role="search"] select')
+  return selects[index] as HTMLSelectElement
 }
 
 /** The query of the last call to host.api. */
@@ -98,6 +107,45 @@ describe('HistoryPage', () => {
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByText('Esta data é anterior à data "Desde".')).toBeTruthy()
     expect(spy.mock.calls.length).toBe(calls)
+  })
+
+  it('filters to the signed-in person by their id', async () => {
+    const spy = renderPage(async () => pageOf([]))
+    await screen.findByText('Ainda não há alterações registadas')
+
+    fireEvent.change(nativeSelect(1), { target: { value: 'me' } })
+
+    await waitFor(() => expect(lastQuery(spy).get('actor')).toBe(ME.id))
+  })
+
+  it('does not offer "only mine" when nobody is signed in', async () => {
+    renderPage(async () => pageOf([]), null)
+    await screen.findByText('Ainda não há alterações registadas')
+    const values = [...nativeSelect(1).options].map((o) => o.value)
+    expect(values).not.toContain('me')
+    expect(values).toContain('system')
+  })
+
+  it('goes back to the last page when the history gets shorter', async () => {
+    let total = 45
+    const spy = renderPage(async (path) => {
+      const page = Number(new URLSearchParams(path.split('?')[1]).get('page') ?? 0)
+      return pageOf(page * 20 < total ? [event({ id: `e${page}` })] : [], total, page)
+    })
+    await screen.findByText(/Página 1 de 3/)
+    fireEvent.click(screen.getByRole('button', { name: 'Seguinte' }))
+    await screen.findByText(/Página 2 de 3/)
+    fireEvent.click(screen.getByRole('button', { name: 'Seguinte' }))
+    await screen.findByText(/Página 3 de 3/)
+
+    // Someone's entries drop out of the filter; the open page is refetched when the window gets focus again.
+    total = 30
+    focusManager.setFocused(false)
+    focusManager.setFocused(true)
+
+    expect(await screen.findByText(/Página 2 de 2/)).toBeTruthy()
+    expect(lastQuery(spy).get('page')).toBe('1')
+    focusManager.setFocused(undefined)
   })
 
   it('pages through long histories', async () => {

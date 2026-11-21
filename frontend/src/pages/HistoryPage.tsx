@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { History } from 'lucide-react'
 import type { AuditEventDto, AuditEventPageDto } from '@alinha/api-client'
 import { formatDateTime, useApiQuery, useHost } from '@alinha/plugin-sdk'
@@ -11,11 +11,14 @@ const ENTITY_OPTIONS = [
   ...Object.entries(ENTITY_TYPES).map(([value, label]) => ({ value, label })),
 ]
 
-const ACTOR_OPTIONS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'me', label: 'Só as minhas alterações' },
-  { value: 'system', label: 'Só as automáticas (aLinha)' },
-]
+/** "Only mine" needs to know who is signed in: without a user it would quietly show everyone's changes. */
+function actorOptions(signedIn: boolean) {
+  return [
+    { value: 'all', label: 'Todos' },
+    ...(signedIn ? [{ value: 'me', label: 'Só as minhas alterações' }] : []),
+    { value: 'system', label: 'Só as automáticas (aLinha)' },
+  ]
+}
 
 /**
  * Change history of one client organization (dashboard-reports#6, US09): who changed what and when, read from the
@@ -59,6 +62,11 @@ export function HistoryPage() {
 
   const data = history.data
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
+  // When the history gets shorter while a later page is open, go to the last page that still exists.
+  const lastPage = pages - 1
+  useEffect(() => {
+    if (data && page > lastPage) setPage(lastPage)
+  }, [data, page, lastPage])
 
   return (
     <>
@@ -74,7 +82,7 @@ export function HistoryPage() {
         </Field>
         <Field label="Quem">
           {(p) => (
-            <Select id={p.id} value={filters.actor} onChange={(v) => change({ actor: v as HistoryFilters['actor'] })} options={ACTOR_OPTIONS} />
+            <Select id={p.id} value={filters.actor} onChange={(v) => change({ actor: v as HistoryFilters['actor'] })} options={actorOptions(!!user)} />
           )}
         </Field>
         <Field label="Desde" optional>
