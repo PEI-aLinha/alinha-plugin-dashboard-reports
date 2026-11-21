@@ -107,6 +107,16 @@ describe('labels', () => {
     expect(detailsText({ action: 'x.y', details: { changed: ['newField', 3] } })).toBe('Mudou: newField.')
   })
 
+  it('names background jobs and their type, and lets them be filtered', () => {
+    expect(actionLabel('job.completed')).toBe('Concluiu uma tarefa automática')
+    expect(actionLabel('job.failed')).toBe('Uma tarefa automática falhou')
+    expect(entityLabel('job')).toBe('Tarefas automáticas')
+    expect(detailsText({ action: 'job.completed', details: { type: 'evidence.collect', version: 1, attempt: 1 } })).toBe(
+      'Tarefa: recolha de evidências.',
+    )
+    expect(detailsText({ action: 'job.dispatched', details: { type: 'report.render' } })).toBe('Tarefa: outra tarefa.')
+  })
+
   it('shows the provider for credentials, and nothing when there are no details', () => {
     expect(detailsText({ action: 'tenant_secret.put', details: { provider: 'github' } })).toBe('Fornecedor: github.')
     expect(detailsText({ action: 'tenant.provisioned', details: {} })).toBeNull()

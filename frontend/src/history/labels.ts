@@ -12,6 +12,12 @@ const ACTIONS: Record<string, string> = {
   'tenant.provisioned': 'Criou a conta da organização',
   'tenant_secret.put': 'Guardou as credenciais de um fornecedor',
   'tenant_secret.delete': 'Apagou as credenciais de um fornecedor',
+  // Background work the core sends to the workers (core.jobs, docs/jobs.md).
+  'job.dispatched': 'Pediu uma tarefa automática',
+  'job.completed': 'Concluiu uma tarefa automática',
+  'job.retried': 'Uma tarefa automática falhou e vai ser repetida',
+  'job.failed': 'Uma tarefa automática falhou',
+  'job.dead': 'Uma tarefa automática não foi entregue',
 }
 
 /** Entity types, for the "Sobre" column and the filter. */
@@ -19,6 +25,12 @@ export const ENTITY_TYPES: Record<string, string> = {
   organization: 'Dados da organização',
   tenant: 'Conta da organização',
   provider_credential: 'Credenciais de fornecedor',
+  job: 'Tarefas automáticas',
+}
+
+/** Job types in `details.type` of `job.*` entries (`contracts/jobs/`). */
+const JOB_TYPES: Record<string, string> = {
+  'evidence.collect': 'recolha de evidências',
 }
 
 /** Field names in `details.changed` of `organization.updated` (organization plugin). */
@@ -65,6 +77,9 @@ export function detailsText(event: Pick<AuditEventDto, 'action' | 'details'>): s
     return `Mudou: ${joinPt(names)}.`
   }
   if (typeof details.provider === 'string') return `Fornecedor: ${details.provider}.`
+  if (event.action.startsWith('job.') && typeof details.type === 'string') {
+    return `Tarefa: ${JOB_TYPES[details.type] ?? 'outra tarefa'}.`
+  }
   return null
 }
 
