@@ -1,5 +1,6 @@
 import { definePlugin } from '@alinha/plugin-sdk'
 import { DashboardReportsPage } from './pages/DashboardReportsPage'
+import { HistoryPage } from './pages/HistoryPage'
 
 /**
  * The plugin's frontend entry point. The shell reads this object and mounts
@@ -18,10 +19,13 @@ export default definePlugin({
     ],
     consultant: [
       { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      // Change history (#6): consultant only, read from the core's audit trail.
+      { path: 'history', handle: { title: 'Histórico', resource: 'audit' }, Component: HistoryPage },
     ],
   },
   nav: [
     { label: 'Painel', path: 'dashboard', area: 'client' },
     { label: 'Painel', path: 'dashboard', area: 'consultant' },
+    { label: 'Histórico', path: 'history', area: 'consultant', resource: 'audit', order: 900 },
   ],
 })
