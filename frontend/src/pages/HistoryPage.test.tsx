@@ -5,7 +5,11 @@ import type { AuditEventDto, AuditEventPageDto } from '@alinha/api-client'
 import { ApiError, PluginHostContext, type PluginHost } from '@alinha/plugin-sdk'
 import { HistoryPage } from './HistoryPage'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  // Undo any focus override, even when a test failed before resetting it.
+  focusManager.setFocused(undefined)
+})
 
 const ME = { id: 'sub-marta', name: 'Marta Ferreira', roles: ['consultant'] }
 
@@ -35,6 +39,7 @@ function renderPage(api: (path: string) => Promise<unknown>, user: PluginHost['u
     user,
     can: () => true,
     api: spy as PluginHost['api'],
+    reauthenticate: async () => {},
   }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -145,7 +150,23 @@ describe('HistoryPage', () => {
 
     expect(await screen.findByText(/Página 2 de 2/)).toBeTruthy()
     expect(lastQuery(spy).get('page')).toBe('1')
-    focusManager.setFocused(undefined)
+  })
+
+  it('marks the table as loading while the next page arrives', async () => {
+    let release: () => void = () => {}
+    renderPage(async (path) => {
+      const page = Number(new URLSearchParams(path.split('?')[1]).get('page') ?? 0)
+      if (page > 0) await new Promise<void>((r) => { release = r })
+      return pageOf([event({ id: `e${page}` })], 45, page)
+    })
+    await screen.findByText(/Página 1 de 3/)
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Seguinte' }))
+
+    await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).not.toBeNull())
+    release()
+    await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).toBeNull())
   })
 
   it('pages through long histories', async () => {

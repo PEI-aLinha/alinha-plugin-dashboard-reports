@@ -110,6 +110,7 @@ export function HistoryPage() {
       ) : history.isError ? (
         <ErrorState error={history.error} onRetry={() => history.refetch()} />
       ) : (
+        <div aria-busy={history.isPlaceholderData || undefined} className={history.isPlaceholderData ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
         <DataTable
           data={data?.items ?? []}
           columns={columns}
@@ -145,6 +146,7 @@ export function HistoryPage() {
             ) : undefined
           }
         />
+        </div>
       )}
     </>
   )

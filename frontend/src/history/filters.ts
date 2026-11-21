@@ -1,4 +1,5 @@
 import { TIME_ZONE } from '@alinha/plugin-sdk'
+import { SYSTEM_ACTOR } from './labels'
 
 /** What the person chose in the history filters. Empty values mean "no filter". */
 export interface HistoryFilters {
@@ -34,7 +35,7 @@ export function invalidRange(f: HistoryFilters): boolean {
 export function historyQuery(f: HistoryFilters, page: number, myId: string | null): string {
   const q = new URLSearchParams()
   if (f.entityType !== 'all') q.set('entityType', f.entityType)
-  if (f.actor === 'system') q.set('actor', 'system')
+  if (f.actor === 'system') q.set('actor', SYSTEM_ACTOR)
   if (f.actor === 'me' && myId) q.set('actor', myId)
   // A day that does not parse (typed by hand, half filled) is no filter rather than a crash.
   const from = startOfDay(f.fromDay, 0)
