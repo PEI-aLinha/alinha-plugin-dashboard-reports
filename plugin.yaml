@@ -7,4 +7,6 @@ version: 0.1.0
 path: plugins/feature/dashboard-reports
 publishes: []     # events it publishes (e.g. AssessmentSubmitted)
 consumes: []      # events it consumes
-permissions: []   # RBAC resources (e.g. assessment:read, assessment:edit)
+# RBAC resources. Which role gets each one lives only in DashboardReportsPlugin.kt (rolePermissions).
+permissions:
+  - portfolio:read   # the consultant's portfolio dashboard (#3), across every assigned client
