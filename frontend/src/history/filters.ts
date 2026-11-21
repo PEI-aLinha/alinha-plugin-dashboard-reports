@@ -36,16 +36,26 @@ export function historyQuery(f: HistoryFilters, page: number, myId: string | nul
   if (f.entityType !== 'all') q.set('entityType', f.entityType)
   if (f.actor === 'system') q.set('actor', 'system')
   if (f.actor === 'me' && myId) q.set('actor', myId)
-  if (f.fromDay) q.set('from', startOfDay(f.fromDay, 0).toISOString())
-  if (f.toDay) q.set('to', startOfDay(f.toDay, 1).toISOString())
+  // A day that does not parse (typed by hand, half filled) is no filter rather than a crash.
+  const from = startOfDay(f.fromDay, 0)
+  const to = startOfDay(f.toDay, 1)
+  if (from) q.set('from', from.toISOString())
+  if (to) q.set('to', to.toISOString())
   if (page > 0) q.set('page', String(page))
   q.set('pageSize', String(PAGE_SIZE))
   return q.toString()
 }
 
-/** Midnight in `TIME_ZONE` of `day` (YYYY-MM-DD) plus `addDays`, as an instant. */
-export function startOfDay(day: string, addDays = 0): Date {
-  const [y, m, d] = day.split('-').map(Number)
+/**
+ * Midnight in `TIME_ZONE` of `day` (YYYY-MM-DD) plus `addDays`, as an instant; null when `day` is empty or not a real
+ * date. Years are limited to 1000–9999: `<input type="date">` accepts more when typed, and `Date.UTC` reads 0–99 as
+ * 1900–1999.
+ */
+export function startOfDay(day: string, addDays = 0): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+  if (!match) return null
+  const [y, m, d] = match.slice(1).map(Number)
+  if (y < 1000 || m < 1 || m > 12 || d < 1 || d > new Date(Date.UTC(y, m, 0)).getUTCDate()) return null
   const utcMidnight = Date.UTC(y, m - 1, d + addDays)
   // Local midnight = UTC midnight minus the zone's offset. Lisbon changes its offset at 01:00 UTC, never around
   // midnight, but the second pass keeps this right for any zone whose offset differs at the two instants.

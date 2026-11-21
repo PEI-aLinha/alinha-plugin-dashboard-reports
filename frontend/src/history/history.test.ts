@@ -35,20 +35,33 @@ describe('historyQuery', () => {
 
 describe('startOfDay (Europe/Lisbon, whatever the browser zone)', () => {
   it('is UTC midnight in winter and 23:00 UTC the day before in summer', () => {
-    expect(startOfDay('2026-01-15').toISOString()).toBe('2026-01-15T00:00:00.000Z')
-    expect(startOfDay('2026-07-15').toISOString()).toBe('2026-07-14T23:00:00.000Z')
+    expect(startOfDay('2026-01-15')?.toISOString()).toBe('2026-01-15T00:00:00.000Z')
+    expect(startOfDay('2026-07-15')?.toISOString()).toBe('2026-07-14T23:00:00.000Z')
   })
 
   it('handles the days the clocks change, which are 23 and 25 hours long', () => {
     // 29 March 2026: 01:00 UTC → summer time. 25 October 2026: 01:00 UTC → winter time.
-    expect(startOfDay('2026-03-29').toISOString()).toBe('2026-03-29T00:00:00.000Z')
-    expect(startOfDay('2026-03-29', 1).toISOString()).toBe('2026-03-29T23:00:00.000Z')
-    expect(startOfDay('2026-10-25').toISOString()).toBe('2026-10-24T23:00:00.000Z')
-    expect(startOfDay('2026-10-25', 1).toISOString()).toBe('2026-10-26T00:00:00.000Z')
+    expect(startOfDay('2026-03-29')?.toISOString()).toBe('2026-03-29T00:00:00.000Z')
+    expect(startOfDay('2026-03-29', 1)?.toISOString()).toBe('2026-03-29T23:00:00.000Z')
+    expect(startOfDay('2026-10-25')?.toISOString()).toBe('2026-10-24T23:00:00.000Z')
+    expect(startOfDay('2026-10-25', 1)?.toISOString()).toBe('2026-10-26T00:00:00.000Z')
   })
 
   it('rolls over the end of the year', () => {
-    expect(startOfDay('2026-12-31', 1).toISOString()).toBe('2027-01-01T00:00:00.000Z')
+    expect(startOfDay('2026-12-31', 1)?.toISOString()).toBe('2027-01-01T00:00:00.000Z')
+  })
+
+  it('is null for days that are empty or not real dates, so a typed value never crashes the page', () => {
+    for (const bad of ['', '2026-11', '0002-11-01', '275761-01-01', '2026-13-01', '2026-02-29', '2026-11-31', 'abcd-ef-gh']) {
+      expect(startOfDay(bad), bad).toBeNull()
+    }
+    expect(startOfDay('2028-02-29')?.toISOString()).toBe('2028-02-29T00:00:00.000Z')
+  })
+
+  it('leaves out a day that does not parse instead of sending it', () => {
+    const q = new URLSearchParams(historyQuery({ ...NO_FILTERS, fromDay: '0002-11-01', toDay: '2026-11-02' }, 0, null))
+    expect(q.has('from')).toBe(false)
+    expect(q.get('to')).toBe('2026-11-03T00:00:00.000Z')
   })
 })
 
