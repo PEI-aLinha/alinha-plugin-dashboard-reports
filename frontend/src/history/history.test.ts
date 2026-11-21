@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { historyQuery, invalidRange, NO_FILTERS } from './filters'
+import { historyQuery, invalidRange, isFiltered, NO_FILTERS, startOfDay } from './filters'
 import { actionLabel, actorLabel, detailsText, entityLabel } from './labels'
 
 const me = { id: 'sub-marta', name: 'Marta Ferreira' }
@@ -21,15 +21,45 @@ describe('historyQuery', () => {
     expect(new URLSearchParams(historyQuery({ ...NO_FILTERS, actor: 'me' }, 0, null)).has('actor')).toBe(false)
   })
 
-  it('covers whole local days: from midnight to the next midnight (to is exclusive)', () => {
+  it('covers whole Lisbon days: from midnight to the next midnight (to is exclusive)', () => {
     const q = new URLSearchParams(historyQuery({ ...NO_FILTERS, fromDay: '2026-11-02', toDay: '2026-11-02' }, 0, null))
-    expect(q.get('from')).toBe(new Date(2026, 10, 2).toISOString())
-    expect(q.get('to')).toBe(new Date(2026, 10, 3).toISOString())
+    expect(q.get('from')).toBe('2026-11-02T00:00:00.000Z')
+    expect(q.get('to')).toBe('2026-11-03T00:00:00.000Z')
   })
 
   it('rolls the end of a month over to the next month', () => {
     const q = new URLSearchParams(historyQuery({ ...NO_FILTERS, toDay: '2026-11-30' }, 0, null))
-    expect(q.get('to')).toBe(new Date(2026, 11, 1).toISOString())
+    expect(q.get('to')).toBe('2026-12-01T00:00:00.000Z')
+  })
+})
+
+describe('startOfDay (Europe/Lisbon, whatever the browser zone)', () => {
+  it('is UTC midnight in winter and 23:00 UTC the day before in summer', () => {
+    expect(startOfDay('2026-01-15').toISOString()).toBe('2026-01-15T00:00:00.000Z')
+    expect(startOfDay('2026-07-15').toISOString()).toBe('2026-07-14T23:00:00.000Z')
+  })
+
+  it('handles the days the clocks change, which are 23 and 25 hours long', () => {
+    // 29 March 2026: 01:00 UTC → summer time. 25 October 2026: 01:00 UTC → winter time.
+    expect(startOfDay('2026-03-29').toISOString()).toBe('2026-03-29T00:00:00.000Z')
+    expect(startOfDay('2026-03-29', 1).toISOString()).toBe('2026-03-29T23:00:00.000Z')
+    expect(startOfDay('2026-10-25').toISOString()).toBe('2026-10-24T23:00:00.000Z')
+    expect(startOfDay('2026-10-25', 1).toISOString()).toBe('2026-10-26T00:00:00.000Z')
+  })
+
+  it('rolls over the end of the year', () => {
+    expect(startOfDay('2026-12-31', 1).toISOString()).toBe('2027-01-01T00:00:00.000Z')
+  })
+})
+
+describe('isFiltered', () => {
+  it('is false only with no filter at all, whatever the order of the fields', () => {
+    expect(isFiltered(NO_FILTERS)).toBe(false)
+    expect(isFiltered({ toDay: '', fromDay: '', actor: 'all', entityType: 'all' })).toBe(false)
+    expect(isFiltered({ ...NO_FILTERS, actor: 'system' })).toBe(true)
+    expect(isFiltered({ ...NO_FILTERS, entityType: 'organization' })).toBe(true)
+    expect(isFiltered({ ...NO_FILTERS, fromDay: '2026-11-01' })).toBe(true)
+    expect(isFiltered({ ...NO_FILTERS, toDay: '2026-11-01' })).toBe(true)
   })
 })
 

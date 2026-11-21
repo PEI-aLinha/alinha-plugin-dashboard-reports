@@ -90,7 +90,7 @@ describe('HistoryPage', () => {
 
     fireEvent.change(screen.getByLabelText(/Desde/), { target: { value: '2026-11-01' } })
 
-    await waitFor(() => expect(lastQuery(spy).get('from')).toBe(new Date(2026, 10, 1).toISOString()))
+    await waitFor(() => expect(lastQuery(spy).get('from')).toBe('2026-11-01T00:00:00.000Z'))
     fireEvent.click(await screen.findByRole('button', { name: 'Limpar os filtros' }))
     await waitFor(() => expect(lastQuery(spy).has('from')).toBe(false))
   })
