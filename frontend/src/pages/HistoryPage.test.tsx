@@ -169,6 +169,24 @@ describe('HistoryPage', () => {
     await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).toBeNull())
   })
 
+  it('does not keep the old rows on screen while a new filter loads', async () => {
+    let release: () => void = () => {}
+    renderPage(async (path) => {
+      if (new URLSearchParams(path.split('?')[1]).get('actor') === 'system') {
+        await new Promise<void>((r) => { release = r })
+        return pageOf([event({ action: 'tenant.provisioned' })])
+      }
+      return pageOf([event({ actor: 'sub-marta', action: 'organization.updated', entityType: 'organization' })])
+    })
+    expect(await screen.findAllByText('Alterou os dados da organização')).not.toHaveLength(0)
+
+    fireEvent.change(nativeSelect(1), { target: { value: 'system' } })
+
+    await waitFor(() => expect(screen.queryAllByText('Alterou os dados da organização')).toHaveLength(0))
+    release()
+    expect(await screen.findAllByText('Criou a conta da organização')).not.toHaveLength(0)
+  })
+
   it('pages through long histories', async () => {
     const spy = renderPage(async (path) => {
       const page = Number(new URLSearchParams(path.split('?')[1]).get('page') ?? 0)

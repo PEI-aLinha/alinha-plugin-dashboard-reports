@@ -20,6 +20,14 @@ function actorOptions(signedIn: boolean) {
   ]
 }
 
+/** The query string of a history path without its page, to tell a page change from a filter change. */
+function withoutPage(path: unknown): string | null {
+  if (typeof path !== 'string') return null
+  const params = new URLSearchParams(path.split('?')[1] ?? '')
+  params.delete('page')
+  return params.toString()
+}
+
 /**
  * Change history of one client organization (dashboard-reports#6, US09): who changed what and when, read from the
  * core's audit trail (`GET /api/audit/events`). Consultant area only; the route needs `audit:read`.
@@ -30,11 +38,15 @@ export function HistoryPage() {
   const [page, setPage] = useState(0)
   const badRange = invalidRange(filters)
 
-  const query = historyQuery(filters, page, user?.id ?? null)
+  const myId = user?.id ?? null
+  const query = historyQuery(filters, page, myId)
+  const firstPage = historyQuery(filters, 0, myId)
   const history = useApiQuery<AuditEventPageDto>(['dashboard-reports', 'history'], `/audit/events?${query}`, {
     enabled: !badRange,
-    // Keeps the current page on screen while the next one loads, so the table does not jump.
-    placeholderData: (previous) => previous,
+    // Keeps the current page on screen while the next one loads, so the table does not jump. Only between pages of
+    // the same filters: after a filter change, the old rows would read as results of the new filter.
+    placeholderData: (previous, previousQuery) =>
+      withoutPage(previousQuery?.queryKey.at(-1)) === firstPage ? previous : undefined,
   })
 
   const change = (patch: Partial<HistoryFilters>) => {

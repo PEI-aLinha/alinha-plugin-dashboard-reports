@@ -73,8 +73,9 @@ export function detailsText(event: Pick<AuditEventDto, 'action' | 'details'>): s
   const { details } = event
   const changed = details.changed
   if (Array.isArray(changed) && changed.length > 0) {
-    const names = changed.filter((f): f is string => typeof f === 'string').map((f) => FIELDS[f] ?? f)
-    return `Mudou: ${joinPt(names)}.`
+    // A field this page does not know yet reads "outros dados", never its code.
+    const names = [...new Set(changed.filter((f): f is string => typeof f === 'string').map((f) => FIELDS[f] ?? 'outros dados'))]
+    if (names.length > 0) return `Mudou: ${joinPt(names)}.`
   }
   if (typeof details.provider === 'string') return `Fornecedor: ${details.provider}.`
   if (event.action.startsWith('job.') && typeof details.type === 'string') {

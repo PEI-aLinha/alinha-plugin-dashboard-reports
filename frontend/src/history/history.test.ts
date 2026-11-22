@@ -99,12 +99,13 @@ describe('labels', () => {
     expect(actorLabel('sub-rui', null)).toBe('Outro utilizador')
   })
 
-  it('lists the changed fields in Portuguese, keeping unknown field names', () => {
+  it('lists the changed fields in Portuguese, never the code of an unknown field', () => {
     expect(detailsText({ action: 'organization.updated', details: { changed: ['name'] } })).toBe('Mudou: nome.')
     expect(detailsText({ action: 'organization.updated', details: { changed: ['name', 'address', 'turnover'] } })).toBe(
       'Mudou: nome, morada e volume de negócios.',
     )
-    expect(detailsText({ action: 'x.y', details: { changed: ['newField', 3] } })).toBe('Mudou: newField.')
+    expect(detailsText({ action: 'x.y', details: { changed: ['newField', 3] } })).toBe('Mudou: outros dados.')
+    expect(detailsText({ action: 'x.y', details: { changed: ['name', 'newField', 'otherField'] } })).toBe('Mudou: nome e outros dados.')
   })
 
   it('names background jobs and their type, and lets them be filtered', () => {
