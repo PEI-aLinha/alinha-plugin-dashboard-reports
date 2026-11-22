@@ -1,5 +1,6 @@
 import { definePlugin } from '@alinha/plugin-sdk'
-import { DashboardReportsPage } from './pages/DashboardReportsPage'
+import { History, Home, LayoutDashboard } from 'lucide-react'
+import { ClientHomePage, ConsultantOverviewPage } from './pages/DashboardReportsPage'
 import { HistoryPage } from './pages/HistoryPage'
 
 /**
@@ -15,17 +16,17 @@ export default definePlugin({
   name: 'Dashboard & Reports',
   routes: {
     client: [
-      { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      { path: 'dashboard', handle: { title: 'Início' }, Component: ClientHomePage },
     ],
     consultant: [
-      { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      { path: 'dashboard', handle: { title: 'Visão geral' }, Component: ConsultantOverviewPage },
       // Change history (#6): consultant only, read from the core's audit trail.
       { path: 'history', handle: { title: 'Histórico', resource: 'audit' }, Component: HistoryPage },
     ],
   },
   nav: [
-    { label: 'Painel', path: 'dashboard', area: 'client' },
-    { label: 'Painel', path: 'dashboard', area: 'consultant' },
-    { label: 'Histórico', path: 'history', area: 'consultant', resource: 'audit', order: 900 },
+    { label: 'Início', path: 'dashboard', area: 'client', icon: Home, order: 10 },
+    { label: 'Visão geral', path: 'dashboard', area: 'consultant', icon: LayoutDashboard, order: 10 },
+    { label: 'Histórico', path: 'history', area: 'consultant', icon: History, resource: 'audit', order: 900 },
   ],
 })
