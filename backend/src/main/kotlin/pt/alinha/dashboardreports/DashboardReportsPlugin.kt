@@ -15,6 +15,13 @@ class DashboardReportsPlugin : AlinhaPlugin {
         version = "0.1.0",
         publishes = setOf(),
         consumes = setOf(),
-        permissions = setOf(),
+        permissions = setOf(PORTFOLIO_READ),
+        // Only consultants have a portfolio: the client's people see their own organization's dashboard.
+        rolePermissions = mapOf("consultant" to setOf(PORTFOLIO_READ)),
     )
+
+    private companion object {
+        /** The portfolio dashboard (#3): `GET /api/dashboard-reports/portfolio` and the `/portfolio/overview` page. */
+        const val PORTFOLIO_READ = "portfolio:read"
+    }
 }
