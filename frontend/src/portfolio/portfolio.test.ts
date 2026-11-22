@@ -35,6 +35,15 @@ describe('portfolioRows', () => {
     expect(rows.find((r) => r.organization.id === 't3')?.summary).toBeNull()
   })
 
+  it('puts an unknown coverage after the known ones, not as 0 %', () => {
+    const orgs = [org('t1', 'Alfa'), org('t2', 'Beta')]
+    const rows = portfolioRows(orgs, [
+      summary('t1', { coverage: null, pendingValidations: 1 }),
+      summary('t2', { coverage: 0.1, pendingValidations: 1 }),
+    ])
+    expect(rows.map((r) => r.organization.name)).toEqual(['Beta', 'Alfa'])
+  })
+
   it('ignores a summary for an organization the session does not list', () => {
     expect(portfolioRows([org('t1', 'Acme')], [summary('t1'), summary('other')]).map((r) => r.organization.id)).toEqual(['t1'])
   })

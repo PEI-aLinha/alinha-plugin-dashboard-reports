@@ -1,14 +1,14 @@
 import { Link, useNavigate } from 'react-router'
 import { Briefcase } from 'lucide-react'
 import type { PortfolioSummaryDto } from '@alinha/api-client'
-import { formatDate, formatNumber, formatPercent, useApiQuery, useHost } from '@alinha/plugin-sdk'
-import { Badge, DataTable, EmptyState, ErrorState, PageHeader, SkeletonRows, StatCard, type ColumnDef } from '@alinha/ui'
+import { ApiError, formatDate, formatNumber, formatPercent, useApiQuery, useHost } from '@alinha/plugin-sdk'
+import { Badge, DataTable, EmptyState, ErrorState, Note, PageHeader, SkeletonRows, StatCard, type ColumnDef } from '@alinha/ui'
 import { attentionReasons, clientStatus, portfolioRows, type ClientStatus, type PortfolioRow } from '../portfolio/portfolio'
 
 const STATUS_LABEL: Record<ClientStatus, string> = {
   attention: 'Precisa de atenção',
   'not-assessed': 'Sem avaliação',
-  'up-to-date': 'Em dia',
+  'up-to-date': 'Sem pendentes',
 }
 
 const clientPath = (row: PortfolioRow) => `/portfolio/${encodeURIComponent(row.organization.slug)}`
@@ -39,9 +39,11 @@ export function PortfolioDashboardPage() {
     )
   }
   if (summary.isPending) return <>{header}<SkeletonRows rows={5} label="A carregar a carteira…" /></>
-  if (summary.isError) return <>{header}<ErrorState error={summary.error} onRetry={() => summary.refetch()} /></>
+  // The figures come from dashboard-reports#2. Until that endpoint exists (404/501), the page still lists the clients.
+  const notYet = summary.isError && summary.error instanceof ApiError && [404, 501].includes(summary.error.status)
+  if (summary.isError && !notYet) return <>{header}<ErrorState error={summary.error} onRetry={() => summary.refetch()} /></>
 
-  const rows = portfolioRows(organizations, summary.data.items)
+  const rows = portfolioRows(organizations, summary.data?.items ?? [])
   const needAttention = rows.filter((r) => clientStatus(r.summary) === 'attention').length
   const pending = rows.reduce((n, r) => n + (r.summary?.pendingValidations ?? 0), 0)
 
@@ -50,7 +52,7 @@ export function PortfolioDashboardPage() {
       id: 'client',
       header: 'Cliente',
       cell: ({ row }) => (
-        <Link to={clientPath(row.original)} className="font-semibold text-brand hover:underline" onClick={(e) => e.stopPropagation()}>
+        <Link to={clientPath(row.original)} className="font-semibold text-brand hover:underline">
           {row.original.organization.name}
         </Link>
       ),
@@ -69,10 +71,15 @@ export function PortfolioDashboardPage() {
   return (
     <>
       {header}
+      {notYet && (
+        <div className="mb-6">
+          <Note>Os indicadores da carteira ainda não estão disponíveis. Por agora, só a lista de clientes.</Note>
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap gap-4">
-        <StatCard label="Clientes" value={formatNumber(rows.length)} />
-        <StatCard label="Precisam de atenção" value={formatNumber(needAttention)} />
-        <StatCard label="Validações pendentes" value={formatNumber(pending)} caption="Planos sugeridos por IA à espera da sua validação." />
+        <Stat label="Clientes" value={formatNumber(rows.length)} />
+        <Stat label="Precisam de atenção" value={formatNumber(needAttention)} />
+        <Stat label="Validações pendentes" value={formatNumber(pending)} caption="Planos sugeridos por IA à espera da sua validação." />
       </div>
       <DataTable
         data={rows}
@@ -92,6 +99,15 @@ export function PortfolioDashboardPage() {
         )}
       />
     </>
+  )
+}
+
+/** A stat card that screen readers (and tests) can find by its label. */
+function Stat({ label, value, caption }: { label: string; value: string; caption?: string }) {
+  return (
+    <div role="group" aria-label={label} className="flex min-w-0 flex-1">
+      <StatCard label={label} value={value} caption={caption} />
+    </div>
   )
 }
 

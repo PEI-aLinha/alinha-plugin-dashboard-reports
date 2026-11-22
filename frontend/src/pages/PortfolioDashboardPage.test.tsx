@@ -63,7 +63,7 @@ describe('PortfolioDashboardPage', () => {
       items: [summary(ACME.id, { pendingValidations: 1 }), summary(BETA.id, { pendingValidations: 2 })],
     }))
     await screen.findByRole('table')
-    const card = (label: string) => screen.getAllByText(label)[0].closest('div.relative') as HTMLElement
+    const card = (label: string) => screen.getByRole('group', { name: label })
     expect(within(card('Clientes')).getByText('3')).toBeTruthy()
     expect(within(card('Precisam de atenção')).getByText('2')).toBeTruthy()
     expect(within(card('Validações pendentes')).getByText('3')).toBeTruthy()
@@ -86,6 +86,22 @@ describe('PortfolioDashboardPage', () => {
     const { spy } = renderPage(async () => ({ items: [] }), [])
     expect(await screen.findByText('Ainda não tem clientes atribuídos')).toBeTruthy()
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('still lists the clients while the figures do not exist yet', async () => {
+    renderPage(async () => {
+      throw new ApiError(404, '/dashboard-reports/portfolio')
+    })
+    expect(await screen.findByText(/ainda não estão disponíveis/)).toBeTruthy()
+    const table = screen.getByRole('table')
+    expect(within(table).getAllByRole('link').map((a) => a.textContent)).toEqual(['Acme, Lda.', 'Beta, S.A.', 'Gama, Lda.'])
+    expect(within(table).getAllByText('Sem avaliação')).toHaveLength(3)
+  })
+
+  it('shows each client as a card on small screens too', async () => {
+    renderPage(async () => ({ items: [summary(ACME.id, { coverage: 0.8, openGaps: 4 })] }))
+    await screen.findByRole('table')
+    expect(screen.getByText(/Cobertura 80\s?% · 4 lacunas/)).toBeTruthy()
   })
 
   it('shows an error with a retry', async () => {

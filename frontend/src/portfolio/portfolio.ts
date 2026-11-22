@@ -15,19 +15,17 @@ export type ClientStatus = 'attention' | 'not-assessed' | 'up-to-date'
  * place comes only from the Compliance Engine (NFR05), which is why "up to date" says nothing about compliance.
  */
 export function clientStatus(summary: PortfolioClientSummaryDto | null): ClientStatus {
-  if (!summary || summary.coverage === null) {
-    if (summary && (summary.pendingValidations > 0 || summary.overdueActions > 0)) return 'attention'
-    return 'not-assessed'
-  }
-  return summary.pendingValidations > 0 || summary.overdueActions > 0 ? 'attention' : 'up-to-date'
+  if (summary && (summary.pendingValidations > 0 || summary.overdueActions > 0)) return 'attention'
+  if (!summary || summary.coverage === null) return 'not-assessed'
+  return 'up-to-date'
 }
 
 const STATUS_ORDER: Record<ClientStatus, number> = { attention: 0, 'not-assessed': 1, 'up-to-date': 2 }
 
 /**
  * Every client of the session's portfolio, joined with the summary the backend has for it, in the order the consultant
- * should look at them: those needing attention first, then those never assessed, then the rest by lowest coverage.
- * Ties go by name. Summaries for an organization the session does not list are ignored (the token is the authority).
+ * should look at them: those needing attention first, then those never assessed, then the rest by lowest coverage
+ * (an unknown coverage goes after the known ones). Ties go by name. Summaries for an organization the session does not list are ignored (the token is the authority).
  */
 export function portfolioRows(organizations: readonly HostOrganization[], items: readonly PortfolioClientSummaryDto[]): PortfolioRow[] {
   const byTenant = new Map(items.map((s) => [s.tenantId, s]))
@@ -38,10 +36,16 @@ export function portfolioRows(organizations: readonly HostOrganization[], items:
       const sb = clientStatus(b.summary)
       return (
         STATUS_ORDER[sa] - STATUS_ORDER[sb] ||
-        (a.summary?.coverage ?? 0) - (b.summary?.coverage ?? 0) ||
+        byCoverage(a.summary?.coverage ?? null, b.summary?.coverage ?? null) ||
         a.organization.name.localeCompare(b.organization.name, 'pt')
       )
     })
+}
+
+/** Lowest coverage first; an unknown coverage (null) after every known one, since it is not "0 %". */
+function byCoverage(a: number | null, b: number | null): number {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1
+  return a - b
 }
 
 /** Why a client needs attention, in plain Portuguese ("2 validações pendentes · 1 ação em atraso"). */
