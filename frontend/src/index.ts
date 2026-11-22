@@ -20,7 +20,7 @@ export default definePlugin({
     ],
     // Portfolio dashboard (#3): every client of the consultant.
     portfolio: [
-      { path: 'overview', handle: { title: 'Visão geral', resource: 'portfolio' }, Component: PortfolioDashboardPage },
+      { path: 'overview', handle: { title: 'Painel da carteira', resource: 'portfolio' }, Component: PortfolioDashboardPage },
     ],
     consultant: [
       { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
@@ -29,6 +29,6 @@ export default definePlugin({
   nav: [
     { label: 'Painel', path: 'dashboard', area: 'client' },
     { label: 'Painel', path: 'dashboard', area: 'consultant' },
-    { label: 'Visão geral', path: 'overview', area: 'portfolio', resource: 'portfolio', order: 10 },
+    { label: 'Painel da carteira', path: 'overview', area: 'portfolio', resource: 'portfolio', order: 10 },
   ],
 })

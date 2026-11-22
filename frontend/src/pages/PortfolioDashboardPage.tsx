@@ -25,7 +25,7 @@ export function PortfolioDashboardPage() {
   })
 
   const header = (
-    <PageHeader title="Visão geral da carteira" subtitle="Todos os seus clientes, com os que precisam de si primeiro." />
+    <PageHeader title="Painel da carteira" subtitle="Todos os seus clientes, com os que precisam de si primeiro." />
   )
 
   if (organizations.length === 0) {
