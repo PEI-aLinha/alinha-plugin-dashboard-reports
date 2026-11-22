@@ -1,5 +1,6 @@
 import { definePlugin } from '@alinha/plugin-sdk'
-import { DashboardReportsPage } from './pages/DashboardReportsPage'
+import { Gauge, Home, LayoutDashboard } from 'lucide-react'
+import { ClientHomePage, ConsultantOverviewPage } from './pages/DashboardReportsPage'
 import { PortfolioDashboardPage } from './pages/PortfolioDashboardPage'
 
 /**
@@ -16,19 +17,19 @@ export default definePlugin({
   name: 'Dashboard & Reports',
   routes: {
     client: [
-      { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      { path: 'dashboard', handle: { title: 'Início' }, Component: ClientHomePage },
     ],
     // Portfolio dashboard (#3): every client of the consultant.
     portfolio: [
       { path: 'overview', handle: { title: 'Painel da carteira', resource: 'portfolio' }, Component: PortfolioDashboardPage },
     ],
     consultant: [
-      { path: 'dashboard', handle: { title: 'Painel' }, Component: DashboardReportsPage },
+      { path: 'dashboard', handle: { title: 'Visão geral' }, Component: ConsultantOverviewPage },
     ],
   },
   nav: [
-    { label: 'Painel', path: 'dashboard', area: 'client' },
-    { label: 'Painel', path: 'dashboard', area: 'consultant' },
-    { label: 'Painel da carteira', path: 'overview', area: 'portfolio', resource: 'portfolio', order: 10 },
+    { label: 'Início', path: 'dashboard', area: 'client', icon: Home, order: 10 },
+    { label: 'Visão geral', path: 'dashboard', area: 'consultant', icon: LayoutDashboard, order: 10 },
+    { label: 'Painel da carteira', path: 'overview', area: 'portfolio', icon: Gauge, resource: 'portfolio', order: 10 },
   ],
 })
