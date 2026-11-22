@@ -19,4 +19,6 @@ jobs:
       plugin-path: plugins/feature/dashboard-reports
       gradle-project: dashboard-reports
       npm-package: "@alinha/plugin-dashboard-reports"
-    secrets: inherit   # ALINHA_READ_TOKEN (private repos only), SONAR_TOKEN
+    secrets:
+      ALINHA_READ_TOKEN: ${{ secrets.ALINHA_READ_TOKEN }}   # private repos only
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
