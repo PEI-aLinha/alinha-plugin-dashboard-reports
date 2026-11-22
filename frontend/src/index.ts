@@ -1,6 +1,7 @@
 import { definePlugin } from '@alinha/plugin-sdk'
-import { Home, LayoutDashboard } from 'lucide-react'
+import { History, Home, LayoutDashboard } from 'lucide-react'
 import { ClientHomePage, ConsultantOverviewPage } from './pages/DashboardReportsPage'
+import { HistoryPage } from './pages/HistoryPage'
 
 /**
  * The plugin's frontend entry point. The shell reads this object and mounts
@@ -19,10 +20,13 @@ export default definePlugin({
     ],
     consultant: [
       { path: 'dashboard', handle: { title: 'Visão geral' }, Component: ConsultantOverviewPage },
+      // Change history (#6): consultant only, read from the core's audit trail.
+      { path: 'history', handle: { title: 'Histórico', resource: 'audit' }, Component: HistoryPage },
     ],
   },
   nav: [
     { label: 'Início', path: 'dashboard', area: 'client', icon: Home, order: 10 },
     { label: 'Visão geral', path: 'dashboard', area: 'consultant', icon: LayoutDashboard, order: 10 },
+    { label: 'Histórico', path: 'history', area: 'consultant', icon: History, resource: 'audit', order: 900 },
   ],
 })
