@@ -33,7 +33,7 @@ function withoutPage(path: unknown): string | null {
  * core's audit trail (`GET /api/audit/events`). Consultant area only; the route needs `audit:read`.
  */
 export function HistoryPage() {
-  const { user, organization } = useHost()
+  const { user } = useHost()
   const [filters, setFilters] = useState<HistoryFilters>(NO_FILTERS)
   const [page, setPage] = useState(0)
   const badRange = invalidRange(filters)
@@ -85,7 +85,6 @@ export function HistoryPage() {
   return (
     <>
       <PageHeader
-        eyebrow={organization?.name}
         title="Histórico de alterações"
         subtitle="Quem mudou o quê e quando nesta organização. Este registo não pode ser alterado nem apagado."
       />
