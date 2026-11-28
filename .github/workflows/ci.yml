@@ -14,11 +14,8 @@ permissions:
 
 jobs:
   ci:
-    # Coordinated change (alinha#26): test against the main repo's branch with the contract. A small PR sets this
-    # back to @main, without main-ref, once that branch merges (as organization#22 / #23).
-    uses: PEI-aLinha/alinha/.github/workflows/plugin-ci.yml@feat/26-traceability
+    uses: PEI-aLinha/alinha/.github/workflows/plugin-ci.yml@main
     with:
-      main-ref: feat/26-traceability
       plugin-path: plugins/feature/dashboard-reports
       gradle-project: dashboard-reports
       npm-package: "@alinha/plugin-dashboard-reports"
