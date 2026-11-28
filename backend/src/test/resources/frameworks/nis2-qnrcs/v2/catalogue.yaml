@@ -1,0 +1,56 @@
+# Test catalogue for the traceability view (alinha#26). REQ-1 and REQ-2 share CTRL-B. v2 renames REQ-2 to tell the versions apart.
+framework: nis2-qnrcs
+version: 2
+title: "NIS2 test catalogue v2"
+sources:
+  - "Test source"
+
+requirements:
+  - id: REQ-1
+    reference: "Test reference 1"
+    text: "Os riscos são geridos."
+    controls: [CTRL-A, CTRL-B]
+  - id: REQ-2
+    reference: "Test reference 2"
+    text: "As cópias de segurança são testadas (v2)."
+    controls: [CTRL-B, CTRL-C]
+
+controls:
+  - id: CTRL-A
+    title: "Basic control"
+    level: basic
+    technical: false
+    evidence:
+      - "Evidence A."
+    questions:
+      - id: CTRL-A-Q1
+        text: "Question A?"
+        explanation: "Why A matters."
+        example: "Example A."
+        answers: ["yes", "partial", "no", "unknown"]
+
+  - id: CTRL-B
+    title: "Substantial control"
+    level: substantial
+    technical: true
+    evidence:
+      - "Evidence B."
+    questions:
+      - id: CTRL-B-Q1
+        text: "Question B?"
+        explanation: "Why B matters."
+        example: "Example B."
+        answers: ["yes", "partial", "no", "unknown"]
+
+  - id: CTRL-C
+    title: "High control"
+    level: high
+    technical: false
+    evidence:
+      - "Evidence C."
+    questions:
+      - id: CTRL-C-Q1
+        text: "Question C?"
+        explanation: "Why C matters."
+        example: "Example C."
+        answers: ["yes", "no"]

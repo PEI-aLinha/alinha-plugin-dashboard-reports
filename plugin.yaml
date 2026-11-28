@@ -10,3 +10,4 @@ consumes: []      # events it consumes
 # RBAC resources. Which role gets each one lives only in DashboardReportsPlugin.kt (rolePermissions).
 permissions:
   - portfolio:read   # the consultant's portfolio dashboard (#3), across every assigned client
+  - traceability:read   # the consultant's traceability view of one client (alinha#26)
