@@ -39,6 +39,11 @@ export const STRENGTH_LABEL: Record<TraceEvidence['strength'], string> = {
   CONTINUOUSLY_VERIFIED: 'verificado em contínuo',
 }
 
+export const PROVIDER_LABEL: Record<string, string> = {
+  'code-repository': 'Repositório de código',
+  'external-surface': 'Superfície externa',
+}
+
 /** A level or code we do not know yet is shown as it comes, never hidden. */
 export const labelOf = (labels: Record<string, string>, value: string): string => labels[value] ?? value
 

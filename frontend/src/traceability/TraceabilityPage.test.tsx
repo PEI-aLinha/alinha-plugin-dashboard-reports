@@ -82,7 +82,7 @@ describe('TraceabilityPage', () => {
     expect(within(controls).getByText(/nível Básico/)).toBeTruthy()
     expect(within(controls).getByText('Fazer o inventário das obrigações legais')).toBeTruthy()
     expect(within(controls).getByText('Mostra uma falha')).toBeTruthy()
-    expect(within(controls).getByText(/verificado nos sistemas/)).toBeTruthy()
+    expect(within(controls).getByText(/Repositório de código, verificado nos sistemas/)).toBeTruthy()
   })
 
   it('says when there are no actions or evidence yet', async () => {
@@ -111,6 +111,44 @@ describe('TraceabilityPage', () => {
       '/dashboard-reports/traceability/nis2-qnrcs?onlyGaps=true', expect.anything(),
     ))
     await waitFor(() => expect(screen.queryByText('A missão e os objetivos são definidos.')).toBeNull())
+  })
+
+  it('keeps the filter focused and the list on screen while the filtered answer loads', async () => {
+    let answer: (value: Traceability) => void = () => {}
+    renderPage(async (path) => (path.includes('onlyGaps')
+      ? new Promise<Traceability>((resolve) => { answer = resolve })
+      : EVALUATED))
+    const filter = await screen.findByLabelText('Só requisitos com falhas')
+    filter.focus()
+
+    fireEvent.click(filter)
+
+    // Still the same checkbox, still focused, and the previous requirements still shown while loading.
+    expect(document.activeElement).toBe(screen.getByLabelText('Só requisitos com falhas'))
+    expect(screen.getByText('A missão e os objetivos são definidos.')).toBeTruthy()
+    answer({ ...EVALUATED, requirements: [EVALUATED.requirements[0]] })
+    await waitFor(() => expect(screen.queryByText('A missão e os objetivos são definidos.')).toBeNull())
+    expect(document.activeElement).toBe(screen.getByLabelText('Só requisitos com falhas'))
+  })
+
+  it('says "all compliant" only for the gaps filter of an evaluated client, never with no data', async () => {
+    renderPage(async (path) => (path.includes('onlyGaps') ? { ...EVALUATED, requirements: [] } : EVALUATED))
+    fireEvent.click(await screen.findByLabelText('Só requisitos com falhas'))
+    expect(await screen.findByText('Nenhum requisito com falhas')).toBeTruthy()
+
+    cleanup()
+    renderPage(async () => ({ ...NOT_EVALUATED, requirements: [] }))
+    expect(await screen.findByText('Este referencial não tem requisitos')).toBeTruthy()
+    expect(screen.queryByText(/estão cumpridos/)).toBeNull()
+  })
+
+  it('shows a value it does not know as it comes, never "undefined"', async () => {
+    const novel = structuredClone(EVALUATED)
+    novel.requirements[0].controls[0].evidence[0].strength = 'AUDITOR_VERIFIED' as never
+    renderPage(async () => novel)
+
+    expect(await screen.findByText(/AUDITOR_VERIFIED/)).toBeTruthy()
+    expect(screen.queryByText(/undefined/)).toBeNull()
   })
 
   it('shows an error with a retry', async () => {

@@ -85,6 +85,31 @@ class TraceabilityServiceTest {
     }
 
     @Test
+    fun `a gap is never hidden by controls that were not evaluated`() {
+        // REQ-2 = CTRL-B (gap) + CTRL-C (above the assessment's level, not evaluated).
+        val view = service(evaluatedOnV1).trace(FRAMEWORK, onlyGaps = true)
+
+        assertThat(view.requirements.map { it.id }).contains("REQ-2")
+        assertThat(view.requirements.single { it.id == "REQ-2" }.status).isEqualTo("gap")
+    }
+
+    @Test
+    fun `an evaluation on a catalogue version that is not loaded fails instead of showing another version`() {
+        val missingVersion = ControlResults { EvaluatedControls(7, "v", mapOf("CTRL-A" to ControlOutcome("gap", "ANSWERED_NO"))) }
+
+        assertThrows<CatalogueVersionMissingException> { service(missingVersion).trace(FRAMEWORK) }
+    }
+
+    @Test
+    fun `a mix of gap and partial controls is a gap`() {
+        val mixed = ControlResults {
+            EvaluatedControls(1, "v", mapOf("CTRL-A" to ControlOutcome("partial", "ANSWERED_PARTIAL"), "CTRL-B" to ControlOutcome("gap", "ANSWERED_NO")))
+        }
+
+        assertThat(service(mixed).trace(FRAMEWORK).requirements.single { it.id == "REQ-1" }.status).isEqualTo("gap")
+    }
+
+    @Test
     fun `a partial control makes its requirement a gap`() {
         val partial = ControlResults {
             EvaluatedControls(1, "v", mapOf("CTRL-A" to ControlOutcome("partial", "ANSWERED_PARTIAL"), "CTRL-B" to ControlOutcome("compliant", null)))

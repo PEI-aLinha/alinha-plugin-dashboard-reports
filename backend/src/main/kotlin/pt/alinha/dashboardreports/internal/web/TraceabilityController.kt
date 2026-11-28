@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import pt.alinha.core.access.RequiresPermission
+import org.slf4j.LoggerFactory
+import pt.alinha.dashboardreports.internal.traceability.CatalogueVersionMissingException
 import pt.alinha.dashboardreports.internal.traceability.FrameworkNotFoundException
 import pt.alinha.dashboardreports.internal.traceability.RequirementNotFoundException
 import pt.alinha.dashboardreports.internal.traceability.RequirementTrace
@@ -35,6 +37,17 @@ class TraceabilityController(private val traceability: TraceabilityService) {
 /** RFC 9457 Problem Details with `code` (ADR 0003); `detail` in Portuguese. */
 @RestControllerAdvice(basePackageClasses = [TraceabilityController::class])
 class TraceabilityProblems {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @ExceptionHandler
+    fun missingVersion(e: CatalogueVersionMissingException): ProblemDetail {
+        log.error("Traceability: {}", e.message)
+        return ProblemDetail.forStatusAndDetail(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Não foi possível mostrar a rastreabilidade desta avaliação. A equipa técnica foi avisada.",
+        ).apply { setProperty("code", "CATALOGUE_VERSION_MISSING") }
+    }
+
     @ExceptionHandler
     fun framework(e: FrameworkNotFoundException) =
         problem("FRAMEWORK_NOT_FOUND", "Este referencial ainda não está disponível na plataforma.")

@@ -67,7 +67,11 @@ class FakeControlResults : ControlResults {
     val byTenant: MutableMap<UUID, EvaluatedControls> = ConcurrentHashMap()
     lateinit var context: TenantContext
 
-    override fun latest(framework: String): EvaluatedControls? = byTenant[context.current().value]
+    /** Only the evaluated framework has a result, as with the real source. */
+    var framework: String = "nis2-qnrcs"
+
+    override fun latest(framework: String): EvaluatedControls? =
+        if (framework == this.framework) byTenant[context.current().value] else null
 }
 
 object TraceabilityDatabase {

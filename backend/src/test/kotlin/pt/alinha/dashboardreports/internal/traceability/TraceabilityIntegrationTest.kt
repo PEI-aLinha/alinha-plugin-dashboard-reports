@@ -33,7 +33,24 @@ class TraceabilityIntegrationTest {
     @BeforeEach
     fun evaluatedClient() {
         results.context = tenants
-        results.byTenant[client] = EvaluatedControls(1, "controls-2026.11-v1", mapOf("CTRL-B" to ControlOutcome("gap", "ANSWERED_NO")))
+        // REQ-1 (CTRL-A, CTRL-B) compliant; REQ-2 (CTRL-B, CTRL-C) a gap through CTRL-C.
+        results.byTenant[client] = EvaluatedControls(
+            1, "controls-2026.11-v1",
+            mapOf(
+                "CTRL-A" to ControlOutcome("compliant", null),
+                "CTRL-B" to ControlOutcome("compliant", null),
+                "CTRL-C" to ControlOutcome("gap", "ANSWERED_NO"),
+            ),
+        )
+        // The other client is evaluated too, with the opposite result: isolation, not just "no data".
+        results.byTenant[other] = EvaluatedControls(
+            1, "controls-2026.11-v1",
+            mapOf(
+                "CTRL-A" to ControlOutcome("gap", "ANSWERED_UNKNOWN"),
+                "CTRL-B" to ControlOutcome("compliant", null),
+                "CTRL-C" to ControlOutcome("compliant", null),
+            ),
+        )
     }
 
     private fun asConsultant(path: String, tenant: UUID = client) = mvc.get(path) {
@@ -48,14 +65,25 @@ class TraceabilityIntegrationTest {
             jsonPath("$.evaluated") { value(true) }
             jsonPath("$.catalogueVersion") { value(1) }
             jsonPath("$.requirements[0].id") { value("REQ-1") }
-            jsonPath("$.requirements[0].status") { value("gap") }
-            jsonPath("$.requirements[0].controls[1].reason") { value("ANSWERED_NO") }
+            jsonPath("$.requirements[0].status") { value("compliant") }
+            jsonPath("$.requirements[1].status") { value("gap") }
+            jsonPath("$.requirements[1].controls[1].reason") { value("ANSWERED_NO") }
         }
     }
 
     @Test
     fun `another client of the same consultant has its own results`() {
         asConsultant(TRACE, tenant = other).andExpect {
+            status { isOk() }
+            jsonPath("$.requirements[0].status") { value("gap") }
+            jsonPath("$.requirements[0].controls[0].reason") { value("ANSWERED_UNKNOWN") }
+            jsonPath("$.requirements[1].status") { value("compliant") }
+        }
+    }
+
+    @Test
+    fun `a client with no evaluation has no statuses`() {
+        asConsultant(TRACE, tenant = UUID.randomUUID()).andExpect {
             status { isOk() }
             jsonPath("$.evaluated") { value(false) }
             jsonPath("$.requirements[0].status") { doesNotExist() }
@@ -64,7 +92,10 @@ class TraceabilityIntegrationTest {
 
     @Test
     fun `only gaps and one requirement`() {
-        asConsultant("$TRACE?onlyGaps=true").andExpect { jsonPath("$.requirements.length()") { value(2) } }
+        asConsultant("$TRACE?onlyGaps=true").andExpect {
+            jsonPath("$.requirements.length()") { value(1) }
+            jsonPath("$.requirements[0].id") { value("REQ-2") }
+        }
         asConsultant("$TRACE/requirements/REQ-2").andExpect {
             status { isOk() }
             jsonPath("$.controls[0].id") { value("CTRL-B") }

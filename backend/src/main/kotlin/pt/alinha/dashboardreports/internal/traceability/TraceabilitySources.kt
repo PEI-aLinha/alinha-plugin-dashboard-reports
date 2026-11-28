@@ -12,6 +12,11 @@ import java.util.UUID
  *   - roadmap actions: the assessment plugin's `api` (assessment#6)
  *   - evidence: this plugin's read model of EvidenceCollected (dashboard-reports#2)
  * A real implementation is a bean of the same interface: TraceabilityService takes it when there is one.
+ *
+ * No tenant parameter, on purpose: like the core's EvaluationResults and ApplicabilityQuery, a source reads the tenant
+ * from TenantContext, so no caller can ask for another tenant's data (RNF03). A source must never cache across
+ * tenants. Every real implementation comes with a test that two clients of the same consultant each see only their
+ * own data, as TraceabilityIntegrationTest does with the fake.
  */
 
 /** The result of the latest evaluation, per control. */

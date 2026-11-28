@@ -9,6 +9,13 @@ import pt.alinha.core.compliance.CatalogueRegistry
 class FrameworkNotFoundException : RuntimeException("No catalogue for this framework")
 class RequirementNotFoundException : RuntimeException("No such requirement in the catalogue")
 
+/**
+ * The evaluation names a catalogue version the application did not load. Never shown against another version: the
+ * statuses would belong to other controls (NFR18). A deployment problem (a `frameworks/` folder missing), not the user's.
+ */
+class CatalogueVersionMissingException(framework: String, version: Int) :
+    IllegalStateException("Catalogue $framework v$version of the latest evaluation is not loaded")
+
 /** `Traceability` in the contract. */
 data class TraceabilityView(
     val framework: String,
@@ -72,7 +79,8 @@ class TraceabilityService(
         val evidenceByControl = evidence.byControl()
         val controls = catalogue.controls.associateBy { it.id }
         val requirements = catalogue.requirements.map { requirement ->
-            val traced = requirement.controls.mapNotNull { controls[it] }.map { control ->
+            // CatalogueLoader refuses a requirement that points to an unknown control, so every id is here.
+            val traced = requirement.controls.map { controls.getValue(it) }.map { control ->
                 val outcome = evaluated?.controls?.get(control.id)
                 ControlTrace(
                     id = control.id,
@@ -100,10 +108,21 @@ class TraceabilityService(
         trace(framework).requirements.firstOrNull { it.id == requirementId } ?: throw RequirementNotFoundException()
 
     private fun catalogueFor(framework: String, evaluated: EvaluatedControls?): Catalogue =
-        (evaluated?.let { catalogues.get(framework, it.catalogueVersion) } ?: catalogues.latest(framework))
-            ?: throw FrameworkNotFoundException()
+        if (evaluated == null) {
+            catalogues.latest(framework) ?: throw FrameworkNotFoundException()
+        } else {
+            catalogues.get(framework, evaluated.catalogueVersion)
+                ?: throw CatalogueVersionMissingException(framework, evaluated.catalogueVersion)
+        }
 
-    /** Not evaluated: null. Any control that is a gap or partial makes the requirement a gap. */
+    /**
+     * A display roll-up of the engine's control statuses, so the consultant can find the requirements with gaps. Not a
+     * compliance decision: those are the Compliance Engine's alone (RNF05).
+     *
+     * Any evaluated control that is a gap or partial makes the requirement a gap, even when its other controls were
+     * not evaluated (above the assessment's level): a confirmed gap is never hidden. Compliant only when every control
+     * is. Otherwise (nothing evaluated, or only compliant ones with others not evaluated) null.
+     */
     private fun statusOf(controls: List<ControlTrace>): String? {
         val evaluated = controls.mapNotNull { it.status }
         return when {

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { ListTree } from 'lucide-react'
+import { ChevronDown, ListTree } from 'lucide-react'
 import { formatDate, useApiQuery } from '@alinha/plugin-sdk'
 import { Badge, Card, Checkbox, EmptyState, ErrorState, Note, PageHeader, SkeletonRows } from '@alinha/ui'
 import {
-  CONTROL_STATUS_LABEL, DEFAULT_FRAMEWORK, LEVEL_LABEL, labelOf, OUTCOME_LABEL, REASON_LABEL, REQUIREMENT_STATUS_LABEL,
-  STRENGTH_LABEL, traceabilityPath, type ControlTrace, type RequirementTrace, type Traceability,
+  CONTROL_STATUS_LABEL, DEFAULT_FRAMEWORK, LEVEL_LABEL, labelOf, OUTCOME_LABEL, PROVIDER_LABEL, REASON_LABEL,
+  REQUIREMENT_STATUS_LABEL, STRENGTH_LABEL, traceabilityPath, type ControlTrace, type RequirementTrace, type Traceability,
 } from './labels'
 
 /**
@@ -14,16 +14,19 @@ import {
 export function TraceabilityPage() {
   const [onlyGaps, setOnlyGaps] = useState(false)
   const path = traceabilityPath(DEFAULT_FRAMEWORK, onlyGaps)
-  const trace = useApiQuery<Traceability>(['dashboard-reports', 'traceability'], path)
+  // The previous answer stays on screen while the filter loads, so the checkbox keeps its focus (no skeleton swap).
+  const trace = useApiQuery<Traceability>(['dashboard-reports', 'traceability'], path, {
+    placeholderData: (previous) => previous,
+  })
 
   const header = (
     <PageHeader title="Rastreabilidade"
       subtitle="De cada requisito legal aos controlos, às falhas, às ações do roadmap e às evidências." />
   )
-  if (trace.isPending) return <>{header}<SkeletonRows rows={6} label="A carregar a rastreabilidade…" /></>
-  if (trace.isError) return <>{header}<ErrorState error={trace.error} onRetry={() => void trace.refetch()} /></>
-
   const view = trace.data
+  if (!view && trace.isError) return <>{header}<ErrorState error={trace.error} onRetry={() => void trace.refetch()} /></>
+  if (!view) return <>{header}<SkeletonRows rows={6} label="A carregar a rastreabilidade…" /></>
+
   return (
     <>
       {header}
@@ -38,12 +41,18 @@ export function TraceabilityPage() {
           avaliação for submetida.
         </Note>
       )}
+      {trace.isError && <ErrorState error={trace.error} onRetry={() => void trace.refetch()} />}
       {view.requirements.length === 0 ? (
-        <EmptyState icon={<ListTree className="size-5" aria-hidden />} title="Nenhum requisito com falhas">
-          Todos os requisitos avaliados estão cumpridos.
-        </EmptyState>
+        onlyGaps && view.evaluated ? (
+          <EmptyState icon={<ListTree className="size-5" aria-hidden />} title="Nenhum requisito com falhas">
+            Todos os requisitos avaliados estão cumpridos.
+          </EmptyState>
+        ) : (
+          <EmptyState icon={<ListTree className="size-5" aria-hidden />} title="Este referencial não tem requisitos" />
+        )
       ) : (
-        <ul role="list" aria-label="Requisitos" className="flex flex-col gap-3">
+        <ul role="list" aria-label="Requisitos" aria-busy={trace.isFetching || undefined}
+          className="flex flex-col gap-3">
           {view.requirements.map((r) => <li key={r.id}><Requirement requirement={r} /></li>)}
         </ul>
       )}
@@ -55,14 +64,17 @@ function Requirement({ requirement: r }: { requirement: RequirementTrace }) {
   return (
     <Card className="p-0">
       <details className="group">
-        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 px-5 py-4">
+        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-[inherit] px-5 py-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
           <span className="flex min-w-0 flex-col gap-1">
             <span className="text-[0.75rem] font-semibold text-muted">{r.id} · {r.reference}</span>
             <span className="text-[0.9375rem] font-semibold text-ink">{r.text}</span>
           </span>
-          <Badge tone={r.status === 'gap' ? 'dark' : r.status === 'compliant' ? 'signal' : 'neutral'}>
-            {r.status ? REQUIREMENT_STATUS_LABEL[r.status] : 'Por avaliar'}
-          </Badge>
+          <span className="flex shrink-0 items-center gap-2">
+            <Badge tone={r.status === 'gap' ? 'dark' : r.status === 'compliant' ? 'signal' : 'neutral'}>
+              {r.status ? labelOf(REQUIREMENT_STATUS_LABEL, r.status) : 'Por avaliar'}
+            </Badge>
+            <ChevronDown className="size-4 text-ink-soft transition-transform group-open:rotate-180" aria-hidden />
+          </span>
         </summary>
         <ul role="list" aria-label={`Controlos de ${r.id}`} className="flex flex-col divide-y divide-line-soft border-t border-line-soft">
           {r.controls.map((c) => <li key={c.id} className="px-5 py-4"><Control control={c} /></li>)}
@@ -82,7 +94,7 @@ function Control({ control: c }: { control: ControlTrace }) {
           {c.reason && <span className="text-[0.8125rem] text-ink-soft">{labelOf(REASON_LABEL, c.reason)}</span>}
         </span>
         <Badge tone={c.status === 'compliant' ? 'signal' : c.status ? 'dark' : 'neutral'}>
-          {c.status ? CONTROL_STATUS_LABEL[c.status] : 'Por avaliar'}
+          {c.status ? labelOf(CONTROL_STATUS_LABEL, c.status) : 'Por avaliar'}
         </Badge>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -106,8 +118,10 @@ function Control({ control: c }: { control: ControlTrace }) {
             <ul role="list" className="flex flex-col gap-1 text-[0.8125rem]">
               {c.evidence.map((e) => (
                 <li key={e.evidenceId}>
-                  {OUTCOME_LABEL[e.outcome]}
-                  <span className="text-ink-soft"> · {e.provider}, {STRENGTH_LABEL[e.strength]}, {formatDate(e.collectedAt)}</span>
+                  {labelOf(OUTCOME_LABEL, e.outcome)}
+                  <span className="text-ink-soft">
+                    {' · '}{labelOf(PROVIDER_LABEL, e.provider)}, {labelOf(STRENGTH_LABEL, e.strength)}, {formatDate(e.collectedAt)}
+                  </span>
                 </li>
               ))}
             </ul>
